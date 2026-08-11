@@ -193,17 +193,39 @@
     {col:'open', cat:'idea', txt:'GitHub-Projects-Board auf ucp3-fixes (dieses Board dorthin spiegeln)'},
   ];
 
-  const LS = 'ucp3_todo_board_v1';
-  let data = load();
+  // ---- Geteilter Speicher (jsonblob) + lokaler Cache ----
+  const API = 'https://jsonblob.com/api/jsonBlob/019ff2e3-4058-7702-a1ff-192e21a48e54';
+  const LS  = 'ucp3_todo_board_v1';
+  let editing = false;   // true solange ein Zettel-Text bearbeitet wird (dann kein Auto-Refresh)
 
-  function load(){
-    try{ const j = JSON.parse(localStorage.getItem(LS)); if(j && j.length) return j; }catch(e){}
-    return SEED.map((c,i)=>({id:'c'+Date.now()+'_'+i, author:'Samurai', ...c}));
+  function seedData(){ return SEED.map((c,i)=>({id:'c'+Date.now()+'_'+i, author:'Samurai', ...c})); }
+  function cacheLoad(){ try{ const j=JSON.parse(localStorage.getItem(LS)); if(Array.isArray(j)&&j.length) return j; }catch(e){} return seedData(); }
+  let data = cacheLoad();
+
+  function setLive(st){ const n=document.getElementById('savedNote'); if(!n) return;
+    n.textContent = st===true ? '● live · geteilt mit Krari' : st==='saving' ? '● speichere…' : '● offline · nur lokal';
+    n.style.color = st===true ? '#2f7a45' : st==='saving' ? '#8a7343' : '#a5342b';
   }
-  function save(){
-    localStorage.setItem(LS, JSON.stringify(data));
-    const n=document.getElementById('savedNote');
-    n.textContent='gespeichert '+new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+
+  async function pull(){ const r=await fetch(API+'?t='+Date.now(),{cache:'no-store',headers:{'Accept':'application/json'}}); if(!r.ok) throw 0; return r.json(); }
+  let pushT;
+  async function pushNow(){ try{ await fetch(API,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({cards:data,rev:Date.now()})}); setLive(true); }catch(e){ setLive(false); } }
+  function save(){ localStorage.setItem(LS, JSON.stringify(data)); setLive('saving'); clearTimeout(pushT); pushT=setTimeout(pushNow,350); }
+
+  async function bootstrap(){
+    try{
+      const j = await pull();
+      if(j && Array.isArray(j.cards) && j.cards.length){ data=j.cards; render(); setLive(true); }
+      else { await pushNow(); }            // Server leer -> mit aktueller Liste befüllen
+    }catch(e){ setLive(false); }
+    let delay=6000;                         // Live-Abgleich, adaptiv (Backoff bei Ratelimit)
+    (async function loop(){
+      if(!editing){
+        try{ const j=await pull(); if(j&&Array.isArray(j.cards) && JSON.stringify(j.cards)!==JSON.stringify(data)){ data=j.cards; render(); } setLive(true); delay=6000; }
+        catch(e){ setLive(false); delay=Math.min(Math.round(delay*1.8), 60000); }
+      }
+      setTimeout(loop, delay);
+    })();
   }
 
   const board = document.getElementById('board');
@@ -247,10 +269,11 @@
     txt.addEventListener('input',()=>{ c.txt=txt.textContent; c.author=me; whoEl.innerHTML=whoHTML(me); save(); });
     // Stift = Bearbeiten anschalten (Text wird markier-/editierbar, Karte solange nicht ziehbar)
     d.querySelector('[data-act=edit]').onclick=()=>{
+      editing=true;
       txt.setAttribute('contenteditable','true'); d.draggable=false; d.classList.add('editing-txt');
       txt.focus(); const r=document.createRange(); r.selectNodeContents(txt); const s=getSelection(); s.removeAllRanges(); s.addRange(r);
     };
-    txt.addEventListener('blur',()=>{ txt.removeAttribute('contenteditable'); d.draggable=true; d.classList.remove('editing-txt'); c.author=me; whoEl.innerHTML=whoHTML(me); save(); });
+    txt.addEventListener('blur',()=>{ editing=false; txt.removeAttribute('contenteditable'); d.draggable=true; d.classList.remove('editing-txt'); c.author=me; whoEl.innerHTML=whoHTML(me); save(); });
     txt.addEventListener('keydown',ev=>{ if(ev.key==='Escape'){ txt.blur(); } });
     d.querySelector('[data-act=del]').onclick=()=>{ if(confirm('Zettel löschen?')){ data=data.filter(x=>x.id!==c.id); save(); render(); } };
     const sel=d.querySelector('.catsel');
@@ -279,6 +302,7 @@
   document.querySelectorAll('.userbar .u').forEach(u=>u.addEventListener('click',()=>{ me=u.dataset.u; localStorage.setItem(UKEY,me); paintUser(); }));
   paintUser();
 
-  render(); save();
+  render();
+  bootstrap();
 })();
 </script>
