@@ -1,0 +1,212 @@
+<title>UCP3 Store — Klickdummy (Content-Tab)</title>
+<style>
+  :root{
+    --frame:#171310; --frame2:#211b14; --bar:#2b2118; --gold:#c79a4b; --gold-soft:#8a6a2e;
+    --parch:#e9dcbf; --parch2:#e0d1ac; --parch-line:#c9b789; --ink:#2c2318; --ink2:#5f513b; --ink3:#8a7a5c;
+    --mod:#2f8a4e; --mod-bg:#dfeede; --cfg:#2f5aa8; --cfg-bg:#dde6f5; --files:#a5342b; --files-bg:#f4ded9;
+    --both:#6e5a2e; --warn:#c0392b; --warn-bg:#f6ddd8; --ok:#2f8a4e;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--frame);color:#e9e2d2;font-family:"Segoe UI",system-ui,Arial,sans-serif;font-size:15px}
+  .app{max-width:1000px;margin:0 auto;padding:16px 16px 60px}
+  .caption{color:#b9ad93;font-size:13px;margin:.2rem 0 1rem}
+  .caption b{color:var(--gold)}
+  .win{border:1px solid #3a2f22;border-radius:8px;overflow:hidden;background:var(--frame2);box-shadow:0 18px 50px rgba(0,0,0,.5)}
+  .titlebar{background:linear-gradient(#241d15,#1b1610);padding:8px 14px;border-bottom:1px solid #3a2f22;font-size:13px;color:#cdbf9f}
+  .tabs{display:flex;gap:4px;padding:10px 12px 0;background:var(--bar)}
+  .tab{padding:8px 16px;color:#b6a77f;font-family:Georgia,serif;font-size:15px;border:1px solid transparent;border-bottom:none;border-radius:6px 6px 0 0;cursor:pointer}
+  .tab.active{background:var(--parch);color:var(--ink);border-color:var(--parch-line);font-weight:600}
+  .panelwrap{background:var(--bar);padding:14px}
+  .panel{background:linear-gradient(var(--parch),var(--parch2));border:1px solid var(--parch-line);border-radius:6px;color:var(--ink);padding:14px}
+  .panel h2{font-family:Georgia,serif;font-size:19px;margin:.1rem 0 .8rem;color:#3a2c17}
+  .toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+  .search{flex:1;min-width:180px;display:flex;align-items:center;gap:8px;background:#f3ead4;border:1px solid var(--parch-line);border-radius:5px;padding:7px 10px;color:var(--ink2)}
+  .search input{border:0;background:transparent;outline:none;flex:1;font-size:14px;color:var(--ink)}
+  .chip{font-size:12.5px;padding:5px 11px;border-radius:999px;border:1px solid var(--parch-line);background:#f1e7cf;color:var(--ink2);cursor:pointer;user-select:none}
+  .chip.on{background:var(--ink);color:var(--parch);border-color:var(--ink)}
+  .chip .sw{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:middle}
+  .sort{margin-left:auto;font-size:12.5px;color:var(--ink2);background:#f1e7cf;border:1px solid var(--parch-line);border-radius:5px;padding:6px 10px;cursor:pointer}
+  .list{display:flex;flex-direction:column;gap:7px}
+  .row{position:relative;background:#f4ecd6;border:1px solid var(--parch-line);border-left-width:5px;border-radius:5px;padding:9px 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .row.mod{border-left-color:var(--mod)} .row.cfg{border-left-color:var(--cfg)} .row.files{border-left-color:var(--files)} .row.both{border-left-color:var(--both)}
+  .row.hide{display:none}
+  .name{font-weight:600;color:#2a2015} .ver{color:var(--ink3);font-size:12.5px}
+  .badge{font-size:11px;text-transform:uppercase;letter-spacing:.06em;padding:2px 7px;border-radius:4px;font-weight:600}
+  .b-mod{background:var(--mod-bg);color:var(--mod)} .b-cfg{background:var(--cfg-bg);color:var(--cfg)} .b-files{background:var(--files-bg);color:var(--files)} .b-both{background:#efe6cd;color:var(--both)}
+  .deps{color:var(--ink3);font-size:12.5px} .deps b{color:var(--ink2)}
+  .spacer{flex:1}
+  .btn{font-size:12.5px;padding:5px 12px;border-radius:5px;border:1px solid var(--gold-soft);background:linear-gradient(#f0c869,#d9a63f);color:#3a2c10;font-weight:600;cursor:pointer;white-space:nowrap}
+  .btn.ghost{background:#efe6cd;border-color:var(--parch-line);color:var(--ink2)}
+  .btn.on{background:linear-gradient(#8fd6a2,#4fae6f);border-color:#2f7a45;color:#123}
+  .caret{color:var(--ink3);font-size:12px;width:14px;text-align:center;cursor:pointer}
+  .family{border:1px solid var(--parch-line);border-radius:6px;overflow:hidden;background:#efe6ce}
+  .fhead{display:flex;align-items:center;gap:10px;padding:9px 12px;background:linear-gradient(#eaddba,#e3d3a9);cursor:pointer}
+  .fname{font-family:Georgia,serif;font-weight:700;color:#3a2c17}
+  .ftag{font-size:11px;background:#3a2c17;color:var(--parch);border-radius:4px;padding:2px 7px;text-transform:uppercase}
+  .members{padding:8px;display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--parch-line)}
+  .family.collapsed .members{display:none}
+  .family.collapsed .fcaret{transform:rotate(-90deg)}
+  .fcaret{display:inline-block;transition:transform .15s}
+  .members .row{background:#f6efdb}
+  .auto{border:1px dashed var(--gold-soft);background:#f3ead0;border-radius:6px;color:var(--ink2);font-size:13px;overflow:hidden}
+  .auto .ahead{display:flex;align-items:center;gap:10px;padding:9px 12px;cursor:pointer}
+  .auto .ftag{background:var(--gold-soft);color:#fff}
+  .auto .amembers{padding:8px;display:flex;flex-direction:column;gap:6px;border-top:1px dashed var(--gold-soft)}
+  .auto.collapsed .amembers{display:none}
+  .auto.collapsed .acaret{transform:rotate(-90deg)}
+  .acaret{display:inline-block;transition:transform .15s}
+  .missing{border:1px solid var(--warn);background:var(--warn-bg);border-radius:5px;padding:8px 12px;display:flex;align-items:center;gap:10px;color:#7a241c;font-size:13px;margin-top:6px;flex-wrap:wrap}
+  .m-ttl{font-weight:700;color:var(--warn)} .pill{background:#fff;border:1px solid #e2b3ac;border-radius:999px;padding:1px 8px;font-size:12px;color:#7a241c}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:12px;font-size:12.5px;color:#b9ad93}
+  .legend span{display:flex;align-items:center;gap:6px}.legend .sw{width:11px;height:11px;border-radius:3px;display:inline-block}
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#241d15;color:#f0e2bf;border:1px solid var(--gold-soft);border-radius:8px;padding:10px 16px;font-size:14px;box-shadow:0 10px 30px #000a;opacity:0;transition:opacity .2s, bottom .2s;pointer-events:none}
+  .toast.show{opacity:1;bottom:30px}
+  .empty{color:var(--ink3);font-size:13px;padding:14px;text-align:center;font-style:italic}
+</style>
+
+<div class="app">
+  <h1 style="font-family:Georgia,serif;color:#e7d6ab;margin:.2rem 0 0">UCP3 Store — Klickdummy</h1>
+  <p class="caption"><b>Klickbar:</b> Filter oben, Families auf-/zuklappen, „Aktivieren" umschalten, „Fehlende installieren" durchspielen, Suche tippen. Nur Prototyp — installiert nichts echt.</p>
+
+  <div class="win">
+    <div class="titlebar">Unofficial Crusader Patch 3 — GUI · Content</div>
+    <div class="tabs">
+      <div class="tab">Overview</div><div class="tab active">Content</div><div class="tab">Customisations</div><div class="tab">Store</div><div class="tab">Launch</div>
+    </div>
+    <div class="panelwrap"><div class="panel">
+      <h2>Verfügbare Erweiterungen</h2>
+      <div class="toolbar">
+        <div class="search">🔎 <input id="q" placeholder="Suche Name / Abhängigkeit…"></div>
+        <span class="chip on" data-f="all">Alle</span>
+        <span class="chip" data-f="mod"><span class="sw" style="background:var(--mod)"></span>Module</span>
+        <span class="chip" data-f="cfg"><span class="sw" style="background:var(--cfg)"></span>Config</span>
+        <span class="chip" data-f="files"><span class="sw" style="background:var(--files)"></span>Files</span>
+        <span class="sort" id="sortBtn">Sortieren: ▾ <b id="sortLbl">Typ</b></span>
+      </div>
+
+      <div class="list" id="list">
+
+        <div class="family" data-type="cfg" data-name="ascension ai balance maps">
+          <div class="fhead"><span class="fcaret">▾</span><span class="fname">Ascension</span><span class="ftag">Family · 3</span>
+            <span class="deps" style="margin-left:6px">kuratierte Gruppe — als Ganzes aktivierbar</span><span class="spacer"></span>
+            <span class="btn" data-act="famtoggle">Family aktivieren</span></div>
+          <div class="members">
+            <div class="row cfg" data-type="cfg" data-name="ascension-ai-balance"><span class="caret">•</span><span class="name">Ascension-AI-Balance</span><span class="ver">1.0.6</span><span class="badge b-cfg">Config</span><span class="spacer"></span><span class="deps"><b>Root</b></span><span class="btn ghost" data-act="toggle">Aktivieren</span></div>
+            <div class="row cfg" data-type="cfg" data-name="ascension-balance"><span class="caret">•</span><span class="name">Ascension-Balance</span><span class="ver">1.0.3</span><span class="badge b-cfg">Config</span><span class="spacer"></span><span class="btn ghost" data-act="toggle">Aktivieren</span></div>
+            <div class="row files" data-type="files" data-name="ascension-maps"><span class="caret">•</span><span class="name">Ascension-Maps</span><span class="ver">1.0.1</span><span class="badge b-files">Files</span><span class="spacer"></span><span class="btn ghost" data-act="toggle">Aktivieren</span></div>
+          </div>
+        </div>
+
+        <div class="auto collapsed" data-type="all" data-name="ai swapper depends">
+          <div class="ahead"><span class="acaret">▾</span><span class="ftag">Auto</span><span>Abhängig von <b style="color:var(--ink)">AI Swapper</b> — automatisch gebildet (3) · klick zum Aufklappen</span></div>
+          <div class="amembers">
+            <div class="row cfg" data-type="cfg" data-name="new-balance-nevikov"><span class="caret">•</span><span class="name">New Balance (Nevikov)</span><span class="ver">1.0.2</span><span class="badge b-cfg">Config</span><span class="spacer"></span><span class="btn ghost" data-act="toggle">Aktivieren</span></div>
+            <div class="row cfg" data-type="cfg" data-name="aggressive-ai"><span class="caret">•</span><span class="name">Aggressive-AI-Behaviour</span><span class="ver">1.4.0</span><span class="badge b-cfg">Config</span><span class="spacer"></span><span class="btn ghost" data-act="toggle">Aktivieren</span></div>
+            <div class="row files" data-type="files" data-name="running-units"><span class="caret">•</span><span class="name">Running Units</span><span class="ver">1.0.2</span><span class="badge b-files">Files</span><span class="spacer"></span><span class="btn ghost" data-act="toggle">Aktivieren</span></div>
+          </div>
+        </div>
+
+        <div class="row mod" data-type="mod" data-name="ai swapper aicloader aivloader files"><span class="caret">▸</span><span class="name">AI Swapper</span><span class="ver">1.2.1</span><span class="badge b-mod">Module</span><span class="deps">· hängt ab von <b>aicloader, aivloader, gmResourceModifier, files</b> <span style="color:var(--ok)">✓ erfüllt</span></span><span class="spacer"></span><span class="btn ghost" data-act="toggle">Aktivieren</span></div>
+
+        <div class="wrap-missing" data-type="cfg" data-name="new balance nevikov aicloader rebalancer">
+          <div class="row cfg" style="border-bottom-left-radius:0;border-bottom-right-radius:0"><span class="caret">▸</span><span class="name">New Balance (Nevikov)</span><span class="ver">1.0.2</span><span class="badge b-cfg">Config</span><span class="deps">· hängt ab von <b>aicloader, rebalancer</b></span><span class="spacer"></span><span class="btn ghost" data-act="toggle" data-locked="1" style="opacity:.5">Aktivieren</span></div>
+          <div class="missing"><span class="m-ttl">2 Abhängigkeiten fehlen</span><span class="pill">aicloader ≥ 1.1.0</span><span class="pill">rebalancer ≥ 1.1.2</span><span class="spacer" style="flex:1"></span><span class="btn" data-act="install">Fehlende installieren &amp; alle aktivieren</span></div>
+        </div>
+
+        <div class="row files" data-type="files" data-name="ucp2-legacy revised ai files"><span class="caret">▸</span><span class="name">UCP2-Legacy: Revised AI Files</span><span class="ver">2.15.1</span><span class="badge b-files">Files</span><span class="deps">· keine Abhängigkeiten</span><span class="spacer"></span><span class="btn ghost" data-act="toggle">Aktivieren</span></div>
+
+        <div class="row both" data-type="both" data-name="vanilla retraced unlocked files"><span class="caret">▸</span><span class="name">Vanilla Retraced Unlocked</span><span class="ver">1.0.0</span><span class="badge b-both">Config + Files</span><span class="deps">· hängt ab von <b>files</b> <span style="color:var(--ok)">✓</span></span><span class="spacer"></span><span class="btn ghost" data-act="toggle">Aktivieren</span></div>
+
+      </div>
+      <div class="empty" id="empty" style="display:none">Keine Erweiterung passt zu Filter/Suche.</div>
+
+      <div class="legend">
+        <span><span class="sw" style="background:var(--mod)"></span>Module</span>
+        <span><span class="sw" style="background:var(--cfg)"></span>Config-only</span>
+        <span><span class="sw" style="background:var(--files)"></span>Files-only</span>
+        <span><span class="sw" style="background:var(--both)"></span>Config + Files</span>
+      </div>
+    </div></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  const toast=(m)=>{const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2200);};
+
+  // Toggle aktivieren
+  document.addEventListener('click',e=>{
+    const b=e.target.closest('[data-act]'); if(!b) return;
+    const act=b.dataset.act;
+    if(act==='toggle'){
+      if(b.dataset.locked){ toast('Erst fehlende Abhängigkeiten installieren.'); return; }
+      const on=b.classList.toggle('on');
+      b.classList.toggle('ghost',!on);
+      b.textContent=on?'✓ Aktiv':'Aktivieren';
+    }
+    if(act==='famtoggle'){
+      const fam=b.closest('.family'); const on=b.classList.toggle('on');
+      b.textContent=on?'✓ Family aktiv':'Family aktivieren';
+      fam.querySelectorAll('.members [data-act=toggle]').forEach(x=>{
+        x.classList.toggle('on',on); x.classList.toggle('ghost',!on); x.textContent=on?'✓ Aktiv':'Aktivieren';
+      });
+      toast(on?'Family „Ascension" aktiviert (Standard-Config)':'Family deaktiviert');
+    }
+    if(act==='install'){
+      const box=b.closest('.wrap-missing'); const missing=box.querySelector('.missing');
+      b.textContent='Installiere…'; b.style.pointerEvents='none';
+      setTimeout(()=>{
+        missing.style.transition='opacity .3s'; missing.style.opacity='0';
+        setTimeout(()=>{
+          missing.remove();
+          const row=box.querySelector('.row'); row.style.borderRadius='5px';
+          const tgl=row.querySelector('[data-act=toggle]'); delete tgl.dataset.locked; tgl.style.opacity='';
+          tgl.classList.remove('ghost'); tgl.classList.add('on'); tgl.textContent='✓ Aktiv';
+          const dep=row.querySelector('.deps'); dep.innerHTML='· hängt ab von <b>aicloader, rebalancer</b> <span style="color:var(--ok)">✓ installiert</span>';
+          toast('aicloader + rebalancer installiert & aktiviert ✓');
+        },320);
+      },700);
+    }
+    // Family / Auto aufklappen
+    if(e.target.closest('.fhead') && !e.target.closest('[data-act]')){ e.target.closest('.family').classList.toggle('collapsed'); }
+    if(e.target.closest('.ahead')){ e.target.closest('.auto').classList.toggle('collapsed'); }
+  });
+
+  // Filter-Chips
+  let filter='all';
+  document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{
+    document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));
+    c.classList.add('on'); filter=c.dataset.f; apply();
+  }));
+  document.getElementById('q').addEventListener('input',apply);
+
+  function apply(){
+    const q=document.getElementById('q').value.trim().toLowerCase();
+    const units=document.querySelectorAll('#list > .row, #list > .family, #list > .auto, #list > .wrap-missing');
+    let visible=0;
+    units.forEach(u=>{
+      const type=u.dataset.type||'all';
+      const name=(u.dataset.name||'')+' '+u.textContent.toLowerCase();
+      const okType = filter==='all' || type===filter || (filter==='cfg'&&type==='both') || (filter==='files'&&type==='both') || type==='all';
+      const okQ = !q || name.includes(q);
+      const show = okType && okQ;
+      u.classList.toggle('hide',!show);
+      if(show) visible++;
+    });
+    document.getElementById('empty').style.display=visible?'none':'block';
+  }
+
+  // Sortieren (Demo: Typ <-> Name)
+  let sortMode='Typ';
+  document.getElementById('sortBtn').addEventListener('click',()=>{
+    sortMode = sortMode==='Typ'?'Name':'Typ';
+    document.getElementById('sortLbl').textContent=sortMode;
+    toast('Sortierung: '+sortMode+' (Demo)');
+  });
+
+  document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active')); t.classList.add('active');
+  }));
+})();
+</script>
