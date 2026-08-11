@@ -218,11 +218,11 @@
       if(j && Array.isArray(j.cards) && j.cards.length){ data=j.cards; render(); setLive(true); }
       else { await pushNow(); }            // Server leer -> mit aktueller Liste befüllen
     }catch(e){ setLive(false); }
-    let delay=6000;                         // Live-Abgleich, adaptiv (Backoff bei Ratelimit)
+    const BASE=15000; let delay=BASE;       // Live-Abgleich alle 15s, adaptiver Backoff bei Ratelimit
     (async function loop(){
       if(!editing){
-        try{ const j=await pull(); if(j&&Array.isArray(j.cards) && JSON.stringify(j.cards)!==JSON.stringify(data)){ data=j.cards; render(); } setLive(true); delay=6000; }
-        catch(e){ setLive(false); delay=Math.min(Math.round(delay*1.8), 60000); }
+        try{ const j=await pull(); if(j&&Array.isArray(j.cards) && JSON.stringify(j.cards)!==JSON.stringify(data)){ data=j.cards; render(); } setLive(true); delay=BASE; }
+        catch(e){ setLive(false); delay=Math.min(Math.round(delay*1.8), 90000); }
       }
       setTimeout(loop, delay);
     })();
