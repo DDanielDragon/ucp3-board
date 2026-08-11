@@ -1,0 +1,284 @@
+<title>Gemeinsames Todo-Board — Daniel &amp; Krari</title>
+<style>
+  :root{
+    --wood:#3b2a17; --wood2:#4a3620; --wood-edge:#241708;
+    --board:#6d4f2c; --board2:#5c4124;
+    --gold:#e8c874; --gold2:#c99a3c; --ink:#2b2114; --ink2:#5a4a30;
+    --head:#f2e4c2;
+    /* Spaltenfarben (Wachs/Wappen) */
+    --c-open:#a5342b; --c-open-bg:#f0dcc0;
+    --c-work:#c99a3c; --c-work-bg:#f2e6c6;
+    --c-test:#2f5aa8; --c-test-bg:#dfe6cf;
+    --c-talk:#7a4ea8; --c-talk-bg:#e9dcc4;
+    --c-done:#2f7a45; --c-done-bg:#e2ddb8;
+    --c-drop:#5a5a5a; --c-drop-bg:#e6dcc4;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:
+      radial-gradient(ellipse at 50% -10%, #7a5a34 0%, #4a3620 55%, #2e2011 100%) fixed;
+    font-family:"Georgia","Iowan Old Style",serif; color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+  .frame{max-width:1500px;margin:0 auto;padding:14px 16px 40px;min-height:100%;}
+
+  /* Kopf */
+  header.top{
+    display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+    background:linear-gradient(#f6ecd0,#e6d3a8);
+    border:2px solid #b79a5e;border-radius:10px;
+    padding:14px 20px;margin-bottom:16px;
+    box-shadow:0 8px 26px rgba(0,0,0,.45), inset 0 1px 0 #fff8;
+    position:relative;
+  }
+  header.top h1{font-size:28px;margin:0;color:#3a2a12;letter-spacing:.5px;
+    text-shadow:0 1px 0 #fff8}
+  header.top .sub{margin:2px 0 0;color:#6b5a38;font-size:14px}
+  .top .spacer{flex:1}
+  .top button{font-family:inherit;cursor:pointer;border:1px solid var(--gold2);
+    background:linear-gradient(#f3d488,#dcae4c);color:#3a2a10;font-weight:700;
+    padding:8px 14px;border-radius:7px;font-size:14px;box-shadow:0 2px 0 #00000022}
+  .top button:hover{filter:brightness(1.06)}
+  .top button.ghost{background:#efe3c4;border-color:#c3ab73;color:#5a4a30;font-weight:600}
+  .hint{font-size:12.5px;color:#6b5a38;margin:8px 2px 0}
+
+  /* Board */
+  .board{display:flex;gap:12px;align-items:flex-start;overflow-x:auto;padding-bottom:10px}
+  .col{flex:1 1 0;min-width:210px;background:linear-gradient(#efe0bd,#e4d1a4);
+    border:2px solid #bda067;border-radius:10px;padding:0 0 10px;
+    box-shadow:0 6px 18px rgba(0,0,0,.35);display:flex;flex-direction:column}
+  .col-head{padding:10px 12px;border-radius:8px 8px 0 0;color:#fff;font-weight:700;
+    letter-spacing:.06em;text-transform:uppercase;font-size:13px;display:flex;
+    align-items:center;gap:8px;text-shadow:0 1px 1px #0006}
+  .col-head .count{margin-left:auto;background:#ffffff33;border-radius:999px;
+    padding:1px 9px;font-size:12px}
+  .col[data-k=open] .col-head{background:linear-gradient(var(--c-open),#7e2820)}
+  .col[data-k=work] .col-head{background:linear-gradient(var(--c-work),#9c7526)}
+  .col[data-k=test] .col-head{background:linear-gradient(var(--c-test),#243f77)}
+  .col[data-k=talk] .col-head{background:linear-gradient(var(--c-talk),#573775)}
+  .col[data-k=done] .col-head{background:linear-gradient(var(--c-done),#245c34)}
+  .col[data-k=drop] .col-head{background:linear-gradient(#6a6a6a,#4a4a4a)}
+
+  .cards{padding:10px;display:flex;flex-direction:column;gap:9px;min-height:70px;flex:1}
+  .cards.dragover{background:#00000012;outline:2px dashed #b79a5e;outline-offset:-6px;border-radius:8px}
+
+  /* Kärtchen = beschriebener Zettel */
+  .card{position:relative;background:linear-gradient(#fbf3dc,#f3e6c3);
+    border:1px solid #d9c187;border-left:5px solid #bbb;border-radius:5px;
+    padding:10px 12px 12px;cursor:grab;
+    box-shadow:0 2px 5px rgba(0,0,0,.25), inset 0 1px 0 #fff8;
+    transition:transform .06s ease, box-shadow .12s ease}
+  .card:hover{box-shadow:0 5px 14px rgba(0,0,0,.30)}
+  .card.dragging{opacity:.55;transform:rotate(-1.2deg)}
+  .card[data-cat=bug]{border-left-color:var(--c-open)}
+  .card[data-cat=task]{border-left-color:var(--c-work)}
+  .card[data-cat=test]{border-left-color:var(--c-test)}
+  .card[data-cat=idea]{border-left-color:var(--gold2)}
+  .card[data-cat=talk]{border-left-color:var(--c-talk)}
+  .card[data-cat=ext]{border-left-color:var(--c-done)}
+  .card .cat{font-size:11px;letter-spacing:.05em;text-transform:uppercase;
+    color:#8a7343;font-weight:700;margin-bottom:3px;display:flex;gap:6px;align-items:center}
+  .card .txt{font-size:14.5px;line-height:1.32;color:#2b2114;outline:none;white-space:pre-wrap;word-break:break-word}
+  .card.editing-txt{cursor:default}
+  .card.editing-txt .txt{cursor:text}
+  .card .txt:focus{background:#fffbe9;box-shadow:0 0 0 2px #d9c18788;border-radius:3px;cursor:text}
+  .card .pin{position:absolute;top:-7px;left:12px;width:14px;height:14px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#ff8a7a,#b5241a);box-shadow:0 2px 3px #0006}
+  .card[data-cat=task] .pin{background:radial-gradient(circle at 35% 30%,#ffd98a,#c99a3c)}
+  .card[data-cat=test] .pin{background:radial-gradient(circle at 35% 30%,#8fb0e6,#2f5aa8)}
+  .card[data-cat=idea] .pin{background:radial-gradient(circle at 35% 30%,#ffe6a0,#d3a24e)}
+  .card[data-cat=talk] .pin{background:radial-gradient(circle at 35% 30%,#c7a3e6,#7a4ea8)}
+  .card[data-cat=ext]  .pin{background:radial-gradient(circle at 35% 30%,#9ad6ac,#2f7a45)}
+  .card .tools{position:absolute;top:6px;right:7px;display:flex;gap:4px;opacity:0;transition:opacity .12s}
+  .card:hover .tools{opacity:1}
+  .card .tools button{border:0;background:#00000010;border-radius:4px;cursor:pointer;
+    font-size:12px;line-height:1;padding:3px 5px;color:#5a4a30}
+  .card .tools button:hover{background:#00000022}
+  .card select.catsel{font-family:inherit;font-size:11px;border:1px solid #d9c187;
+    background:#fffbe9;border-radius:4px;color:#8a7343;margin-top:6px;padding:2px 4px;display:none}
+  .card.editing select.catsel{display:inline-block}
+
+  .addbtn{margin:2px 10px 0;border:1px dashed #b79a5e;background:#ffffff44;color:#6b5a38;
+    border-radius:6px;padding:7px;cursor:pointer;font-family:inherit;font-size:13px}
+  .addbtn:hover{background:#ffffff77}
+
+  /* Bearbeiter-Umschalter + Namensschild */
+  .userbar{display:flex;align-items:center;gap:8px;font-size:13px;color:#6b5a38}
+  .userbar .lbl{color:#6b5a38}
+  .userbar .u{cursor:pointer;border:1px solid #c3ab73;background:#efe3c4;border-radius:999px;
+    padding:5px 11px;display:flex;align-items:center;gap:7px;color:#5a4a30;font-weight:600}
+  .userbar .u .d{width:11px;height:11px;border-radius:50%;display:inline-block}
+  .userbar .u.on{color:#fff;border-color:#00000033}
+  .card{padding-bottom:24px}
+  .card .who{position:absolute;bottom:5px;right:8px;font-size:10.5px;color:#6b5a38;
+    display:flex;align-items:center;gap:5px;background:#0000000d;border-radius:999px;padding:1px 8px}
+  .card .who .wd{width:8px;height:8px;border-radius:50%;display:inline-block}
+
+  footer.legend{margin-top:16px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;
+    background:#f6ecd0cc;border:1px solid #c3ab73;border-radius:8px;padding:10px 14px;font-size:13px;color:#5a4a30}
+  footer.legend b{color:#3a2a12}
+  .legend .lg{display:flex;align-items:center;gap:7px}
+  .legend .sw{width:12px;height:12px;border-radius:3px;display:inline-block}
+  .saved{font-size:12px;color:#6b5a38}
+</style>
+
+<div class="frame">
+  <header class="top">
+    <div>
+      <h1>⚔ Gemeinsames Todo-Board</h1>
+      <p class="sub">Daniel &amp; Krari — UCP3 / Stronghold Crusader</p>
+    </div>
+    <span class="spacer"></span>
+    <div class="userbar">
+      <span class="lbl">Ich bin:</span>
+      <span class="u" data-u="Samurai"><span class="d"></span>Samurai</span>
+      <span class="u" data-u="Krarilotus"><span class="d"></span>Krarilotus</span>
+    </div>
+  </header>
+
+  <div class="board" id="board"></div>
+
+  <footer class="legend">
+    <b>Kategorien:</b>
+    <span class="lg">🐞 Bug</span>
+    <span class="lg">🔧 Aufgabe</span>
+    <span class="lg">⚗ Test</span>
+    <span class="lg">💡 Idee</span>
+    <span class="lg">💬 Besprechen</span>
+    <span class="lg">📦 UCP3/Extension</span>
+    <span class="saved" id="savedNote" style="margin-left:auto"></span>
+  </footer>
+</div>
+
+<script>
+(function(){
+  const COLS = [
+    {k:'open', t:'Offen'},
+    {k:'work', t:'In Arbeit'},
+    {k:'test', t:'Warten auf Test'},
+    {k:'talk', t:'Besprechen'},
+    {k:'done', t:'Erledigt'},
+    {k:'drop', t:'Verworfen'},
+  ];
+  const CATS = {
+    bug:'🐞 Bug', task:'🔧 Aufgabe', test:'⚗ Test',
+    idea:'💡 Idee', talk:'💬 Besprechen', ext:'📦 UCP3/Extension'
+  };
+  const USERS = { Samurai:{n:'Samurai',c:'#2f5aa8'}, Krarilotus:{n:'Krari',c:'#a5342b'} };
+  const UKEY = 'ucp3_board_user';
+  let me = localStorage.getItem(UKEY) || 'Samurai';
+  const whoHTML = a => { const u=USERS[a]||USERS.Samurai; return `<span class="wd" style="background:${u.c}"></span>${u.n}`; };
+  const SEED = [
+    // aus unserem echten Backlog (Stand 11.08.2026)
+    {col:'done', cat:'bug',  txt:'AIV-Truppen-Spot-Bug: Ursache gefunden (Decoder 0x4EF460 überspringt Zeilen 9/11/18) + live bewiesen'},
+    {col:'done', cat:'ext',  txt:'Modul aiv-troop-spot-fix gebaut, veröffentlicht (ucp3-fixes) — von Testern bestätigt'},
+    {col:'done', cat:'ext',  txt:'Hopfenfarm-Limit-Fix: Modul + Release fertig'},
+    {col:'done', cat:'task', txt:'Ghidra + OpenSHC-Team-Analyse (4765 benannte Funktionen) als Referenz eingerichtet'},
+    {col:'test', cat:'test', txt:'Beide Module testen: normal SHC UND Extreme (Krari)'},
+    {col:'work', cat:'task', txt:'definition.yml Meta korrigieren: framework/frontend-Version, game-Feld (Ref: Vanilla Retraced)'},
+    {col:'work', cat:'task', txt:'Beschreibung DE + EN im korrekten Strukturpfad mit Unterordner; user-facing kurz & präzise'},
+    {col:'work', cat:'task', txt:'Konfigurierbarer Aktivierungs-Wert, Name signalisiert „AI fix", richtige Kategorie (Ref: ucp2-legacy)'},
+    {col:'talk', cat:'talk', txt:'Store-PR #22 mergen lassen (gynt) — dann im Store sichtbar'},
+    {col:'talk', cat:'talk', txt:'Nachricht an gynt: families for plugins (#274 + #310) — semantische Gruppen'},
+    {col:'open', cat:'task', txt:'Store: Sortierung nach Typ (Modul/Plugin/Config/Files) + Typ-Färbung (#310)'},
+    {col:'open', cat:'task', txt:'Store: Abhängigkeits-Baum sichtbar + Auto-Gruppen aus dem Graphen'},
+    {col:'open', cat:'task', txt:'Store: fehlende Abhängigkeiten anzeigen + 1-Klick installieren (Slay-the-Spire-Stil)'},
+    {col:'open', cat:'task', txt:'Schlaue Store-Suche: inhalts-/kontextbasiert, sprachübergreifend (Ochsenjoch↔Ox tether), tippfehler-tolerant'},
+    {col:'open', cat:'bug',  txt:'Dependency-Enforcement: verhindern, dass Plugin lädt, dessen AIC-Deps fehlen (Symptom: „Unknown AIC field")'},
+    {col:'work', cat:'task', txt:'Ghidra: Extreme-Funde gegen benannte Basis-Funktionen abgleichen (0x4CD360 = aiGiveOuterPatrolCommand?)'},
+    {col:'open', cat:'idea', txt:'Kategorie pro Truppentyp konfigurierbar machen (Tabelle 0xB428A8) — laufen/patrouillieren/gammeln'},
+    {col:'open', cat:'idea', txt:'Balance-Visualisierung: Diagramme, welche Einheiten genervt/geboostet wurden'},
+    {col:'open', cat:'idea', txt:'Rechner: Gesamtkosten aller Gebäude/Truppen, wenn man Rohstoffe/Waffen kaufen müsste'},
+    {col:'open', cat:'idea', txt:'GitHub-Projects-Board auf ucp3-fixes (dieses Board dorthin spiegeln)'},
+  ];
+
+  const LS = 'ucp3_todo_board_v1';
+  let data = load();
+
+  function load(){
+    try{ const j = JSON.parse(localStorage.getItem(LS)); if(j && j.length) return j; }catch(e){}
+    return SEED.map((c,i)=>({id:'c'+Date.now()+'_'+i, author:'Samurai', ...c}));
+  }
+  function save(){
+    localStorage.setItem(LS, JSON.stringify(data));
+    const n=document.getElementById('savedNote');
+    n.textContent='gespeichert '+new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+  }
+
+  const board = document.getElementById('board');
+  function render(){
+    board.innerHTML='';
+    COLS.forEach(col=>{
+      const items = data.filter(c=>c.col===col.k);
+      const el = document.createElement('div');
+      el.className='col'; el.dataset.k=col.k;
+      el.innerHTML = `<div class="col-head">${col.t}<span class="count">${items.length}</span></div>`;
+      const cards = document.createElement('div');
+      cards.className='cards'; cards.dataset.k=col.k;
+      items.forEach(c=> cards.appendChild(cardEl(c)));
+      el.appendChild(cards);
+      const add = document.createElement('button');
+      add.className='addbtn'; add.textContent='+ Zettel';
+      add.onclick=()=>{ const c={id:'c'+Date.now(), col:col.k, cat:'task', txt:'Neuer Zettel …', author:me}; data.push(c); save(); render();
+        setTimeout(()=>{ const eb=board.querySelector(`[data-id="${c.id}"] [data-act=edit]`); if(eb) eb.click(); },30); };
+      el.appendChild(add);
+      dropZone(cards);
+      board.appendChild(el);
+    });
+  }
+
+  function cardEl(c){
+    const d=document.createElement('div');
+    d.className='card'; d.draggable=true; d.dataset.id=c.id; d.dataset.cat=c.cat;
+    d.innerHTML =
+      `<span class="pin"></span>
+       <div class="tools">
+         <button title="Text bearbeiten" data-act="edit">✏️</button>
+         <button title="Kategorie" data-act="cat">🏷</button>
+         <button title="Löschen" data-act="del">✕</button>
+       </div>
+       <div class="cat">${CATS[c.cat]||''}</div>
+       <div class="txt" spellcheck="false"></div>
+       <select class="catsel">${Object.entries(CATS).map(([k,v])=>`<option value="${k}" ${k===c.cat?'selected':''}>${v}</option>`).join('')}</select>
+       <div class="who" title="zuletzt bearbeitet von"></div>`;
+    const txt=d.querySelector('.txt'); txt.textContent=c.txt;
+    const whoEl=d.querySelector('.who'); whoEl.innerHTML=whoHTML(c.author);
+    txt.addEventListener('input',()=>{ c.txt=txt.textContent; c.author=me; whoEl.innerHTML=whoHTML(me); save(); });
+    // Stift = Bearbeiten anschalten (Text wird markier-/editierbar, Karte solange nicht ziehbar)
+    d.querySelector('[data-act=edit]').onclick=()=>{
+      txt.setAttribute('contenteditable','true'); d.draggable=false; d.classList.add('editing-txt');
+      txt.focus(); const r=document.createRange(); r.selectNodeContents(txt); const s=getSelection(); s.removeAllRanges(); s.addRange(r);
+    };
+    txt.addEventListener('blur',()=>{ txt.removeAttribute('contenteditable'); d.draggable=true; d.classList.remove('editing-txt'); c.author=me; whoEl.innerHTML=whoHTML(me); save(); });
+    txt.addEventListener('keydown',ev=>{ if(ev.key==='Escape'){ txt.blur(); } });
+    d.querySelector('[data-act=del]').onclick=()=>{ if(confirm('Zettel löschen?')){ data=data.filter(x=>x.id!==c.id); save(); render(); } };
+    const sel=d.querySelector('.catsel');
+    d.querySelector('[data-act=cat]').onclick=()=>{ d.classList.toggle('editing'); };
+    sel.onchange=()=>{ c.cat=sel.value; d.dataset.cat=sel.value; d.querySelector('.cat').textContent=CATS[sel.value]; d.classList.remove('editing'); save(); };
+    d.addEventListener('dragstart',e=>{ d.classList.add('dragging'); e.dataTransfer.setData('text/plain',c.id); e.dataTransfer.effectAllowed='move'; });
+    d.addEventListener('dragend',()=>d.classList.remove('dragging'));
+    return d;
+  }
+
+  function dropZone(zone){
+    zone.addEventListener('dragover',e=>{ e.preventDefault(); zone.classList.add('dragover'); });
+    zone.addEventListener('dragleave',()=>zone.classList.remove('dragover'));
+    zone.addEventListener('drop',e=>{
+      e.preventDefault(); zone.classList.remove('dragover');
+      const id=e.dataTransfer.getData('text/plain');
+      const card=data.find(x=>x.id===id); if(!card) return;
+      card.col=zone.dataset.k;
+      // Reihenfolge: ans Ende der Zielspalte
+      data=data.filter(x=>x.id!==id); data.push(card);
+      save(); render();
+    });
+  }
+
+  function paintUser(){ document.querySelectorAll('.userbar .u').forEach(u=>{ const k=u.dataset.u; const on=k===me; u.classList.toggle('on',on); u.style.background=on?USERS[k].c:''; u.style.color=on?'#fff':''; u.querySelector('.d').style.background=USERS[k].c; }); }
+  document.querySelectorAll('.userbar .u').forEach(u=>u.addEventListener('click',()=>{ me=u.dataset.u; localStorage.setItem(UKEY,me); paintUser(); }));
+  paintUser();
+
+  render(); save();
+})();
+</script>
