@@ -1,0 +1,74 @@
+<title>SHC Balance Sources</title>
+<style>
+  :root{--bg:#0f141a;--bg2:#161d25;--line:#28323d;--line2:#202932;--ink:#e6ecf3;--ink2:#a9b6c4;--ink3:#71808f;--accent:#d3a24e;--warn:#e0a44a;--ok:#31c06a;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Segoe UI",system-ui,Arial,sans-serif;font-size:14px}
+  .wrap{max-width:900px;margin:0 auto;padding:22px 18px 60px}
+  h1{font-size:22px;margin:.2rem 0 .1rem}
+  .sub{color:var(--ink3);font-size:13px;margin:0 0 1.2rem}
+  .tablewrap{border:1px solid var(--line);border-radius:10px;overflow:auto}
+  table{border-collapse:collapse;width:100%;font-size:14px}
+  th{background:var(--bg2);color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;font-size:11px;text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);white-space:nowrap}
+  td{padding:11px 14px;border-bottom:1px solid var(--line2);vertical-align:top}
+  tbody tr:last-child td{border-bottom:0}
+  tbody tr:hover td{background:#141b23}
+  td.bal{font-weight:700;color:var(--ink);white-space:nowrap}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--ink2);background:var(--bg2)}
+  .tag.json{color:#8fd6a2;border-color:#2f7a45}
+  .tag.sheet{color:#8fb0e6;border-color:#2f5aa8}
+  .upd{font-variant-numeric:tabular-nums;white-space:nowrap}
+  .upd.known{color:var(--ok)}
+  .upd.unk{color:var(--warn)}
+  .muted{color:var(--ink3);font-size:12px}
+  .note{margin-top:16px;background:var(--bg2);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:8px;padding:12px 14px;color:var(--ink2);font-size:13px}
+  .foot{margin-top:12px;color:var(--ink3);font-size:12px}
+</style>
+<div class="wrap">
+  <h1>Stronghold Crusader — Balance Sources</h1>
+  <p class="sub">Where each balance's data lives, its format, and how fresh it is. Generated 2026-08-12.</p>
+
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>Balance</th><th>Source</th><th>Format</th><th>Last update</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="bal">Vanilla</td>
+        <td><a href="https://docs.google.com/spreadsheets/d/1d87q-HgE3XSqTcaYnSKE_r03JsgBWnNfprGisYajTlA/edit" target="_blank">SHC Stats sheet — tab &ldquo;Vanilla&rdquo;</a> <span class="muted">(Altaruss, linked on UCP)</span></td>
+        <td><span class="tag sheet">Google&nbsp;Sheet</span></td>
+        <td class="upd unk">unknown &mdash; open sheet &rarr; version history</td>
+      </tr>
+      <tr>
+        <td class="bal">Origin</td>
+        <td><a href="https://docs.google.com/spreadsheets/d/1d87q-HgE3XSqTcaYnSKE_r03JsgBWnNfprGisYajTlA/edit" target="_blank">SHC Stats sheet — tab &ldquo;Origin&rdquo;</a></td>
+        <td><span class="tag sheet">Google&nbsp;Sheet</span></td>
+        <td class="upd unk">unknown &mdash; open sheet &rarr; version history</td>
+      </tr>
+      <tr>
+        <td class="bal">Ascension (AI)</td>
+        <td><a href="https://github.com/Krarilotus/Ascension/blob/ucp3-ascension/extension-Ascension-AI-Balance/resources/balance/ascension_ai.json" target="_blank">ascension_ai.json</a> <span class="muted">(GitHub, branch ucp3-ascension &middot; also in UCP install)</span></td>
+        <td><span class="tag json">JSON</span></td>
+        <td class="upd known">2025-12-20</td>
+      </tr>
+      <tr>
+        <td class="bal">Ascension (Multiplayer)</td>
+        <td><a href="https://github.com/Krarilotus/Ascension/blob/ucp3-ascension/extension-Ascension-Balance/resources/balance/ascension.json" target="_blank">ascension.json</a> <span class="muted">(GitHub / UCP install: Ascension-Balance-1.1.3)</span></td>
+        <td><span class="tag json">JSON</span></td>
+        <td class="upd known">2025-12-20 <span class="muted">(repo)</span></td>
+      </tr>
+      <tr>
+        <td class="bal">Team League (Tournament&nbsp;2)</td>
+        <td><a href="https://docs.google.com/spreadsheets/d/1_0TjjjOo__ZQMDyEDb9oVnakAluK_ocG/edit" target="_blank">Tournament 2 sheet</a></td>
+        <td><span class="tag sheet">Google&nbsp;Sheet</span></td>
+        <td class="upd unk">unknown &mdash; open sheet &rarr; version history</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="note">
+    <b>On &ldquo;last update&rdquo;:</b> JSON balances (GitHub / in the UCP install) carry a real commit date, so freshness is checkable automatically. Google Sheets don't expose a last-edited date without the Google Drive API (login required) &mdash; you have to open the sheet and check <i>File &rarr; Version history</i>. This is a strong argument for using the <b>JSON sources</b> (also downloadable straight from UCP3, per Nevikov: <code>ucp/plugins/&lt;balance&gt;/resources/balance/*.json</code>) as the canonical, auto-checkable source.
+  </div>
+  <div class="foot">Must-haves covered: Vanilla &middot; Team League &middot; Ascension. Origin + second Ascension flavour included as bonus.</div>
+</div>
