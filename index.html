@@ -208,9 +208,15 @@
   }
 
   async function pull(){ const r=await fetch(API+'?t='+Date.now(),{cache:'no-store',headers:{'Accept':'application/json'}}); if(!r.ok) throw 0; return r.json(); }
-  let pushT;
-  async function pushNow(){ try{ await fetch(API,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({cards:data,rev:Date.now()})}); setLive(true); }catch(e){ setLive(false); } }
-  function save(){ localStorage.setItem(LS, JSON.stringify(data)); setLive('saving'); clearTimeout(pushT); pushT=setTimeout(pushNow,350); }
+  let dirty=false, pushT;
+  async function pushNow(){
+    try{
+      const r=await fetch(API,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({cards:data,rev:Date.now()})});
+      if(!r.ok) throw 0;                    // 429/Fehler: fetch wirft NICHT von selbst -> hier erzwingen
+      dirty=false; setLive(true);
+    }catch(e){ setLive(false); clearTimeout(pushT); pushT=setTimeout(pushNow,5000); }  // erneut versuchen bis es klappt
+  }
+  function save(){ localStorage.setItem(LS, JSON.stringify(data)); dirty=true; setLive('saving'); clearTimeout(pushT); pushT=setTimeout(pushNow,300); }
 
   async function bootstrap(){
     try{
@@ -218,12 +224,17 @@
       if(j && Array.isArray(j.cards) && j.cards.length){ data=j.cards; render(); setLive(true); }
       else { await pushNow(); }            // Server leer -> mit aktueller Liste befüllen
     }catch(e){ setLive(false); }
-    const BASE=15000; let delay=BASE;       // Live-Abgleich alle 15s, adaptiver Backoff bei Ratelimit
+    const BASE=12000; let delay=BASE;
     (async function loop(){
-      if(!editing){
-        try{ const j=await pull(); if(j&&Array.isArray(j.cards) && JSON.stringify(j.cards)!==JSON.stringify(data)){ data=j.cards; render(); } setLive(true); delay=BASE; }
-        catch(e){ setLive(false); delay=Math.min(Math.round(delay*1.8), 90000); }
-      }
+      try{
+        if(dirty){ await pushNow(); }                 // ausstehende lokale Änderung zuerst sichern
+        else if(!editing){
+          const j=await pull();
+          if(!dirty && j && Array.isArray(j.cards) && JSON.stringify(j.cards)!==JSON.stringify(data)){ data=j.cards; render(); }
+          setLive(true);
+        }
+        delay=BASE;
+      }catch(e){ setLive(false); delay=Math.min(Math.round(delay*1.7), 90000); }
       setTimeout(loop, delay);
     })();
   }
