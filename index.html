@@ -208,22 +208,26 @@
   }
 
   async function pull(){ const r=await fetch(API+'?t='+Date.now(),{cache:'no-store',headers:{'Accept':'application/json'}}); if(!r.ok) throw 0; return r.json(); }
+  const DK = LS+'_dirty';                  // dauerhaftes "ungespeichert"-Flag, übersteht Neuladen
   let dirty=false, pushT;
+  function schedulePush(ms){ clearTimeout(pushT); pushT=setTimeout(pushNow, ms); }
   async function pushNow(){
     try{
       const r=await fetch(API,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({cards:data,rev:Date.now()})});
       if(!r.ok) throw 0;                    // 429/Fehler: fetch wirft NICHT von selbst -> hier erzwingen
-      dirty=false; setLive(true);
-    }catch(e){ setLive(false); clearTimeout(pushT); pushT=setTimeout(pushNow,5000); }  // erneut versuchen bis es klappt
+      dirty=false; localStorage.removeItem(DK); setLive(true);
+    }catch(e){ setLive(false); schedulePush(5000); }  // erneut versuchen bis es klappt
   }
-  function save(){ localStorage.setItem(LS, JSON.stringify(data)); dirty=true; setLive('saving'); clearTimeout(pushT); pushT=setTimeout(pushNow,300); }
+  function save(){ localStorage.setItem(LS, JSON.stringify(data)); localStorage.setItem(DK,'1'); dirty=true; setLive('saving'); schedulePush(300); }
 
   async function bootstrap(){
+    const wasDirty = localStorage.getItem(DK)==='1';   // lokale Änderung vom letzten Mal noch nicht synchron?
     try{
       const j = await pull();
-      if(j && Array.isArray(j.cards) && j.cards.length){ data=j.cards; render(); setLive(true); }
+      if(wasDirty){ dirty=true; setLive('saving'); schedulePush(300); }         // lokal behalten + pushen, NICHT vom Server überschreiben
+      else if(j && Array.isArray(j.cards) && j.cards.length){ data=j.cards; render(); setLive(true); }
       else { await pushNow(); }            // Server leer -> mit aktueller Liste befüllen
-    }catch(e){ setLive(false); }
+    }catch(e){ dirty=wasDirty; setLive(false); if(wasDirty) schedulePush(5000); }
     const BASE=12000; let delay=BASE;
     (async function loop(){
       try{
